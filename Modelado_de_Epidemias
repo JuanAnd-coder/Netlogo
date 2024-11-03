@@ -1,0 +1,77 @@
+
+breed [people a-person]  ; hacer referencia a personas
+people-own [status infection-time]  ; Propiedades de cada persona
+
+to setup
+
+
+  clear-all
+  create-people total-population     ; crear personas
+[
+    set shape "person"              ; Cambiar la forma a círculo
+    setxy random-xcor random-ycor    ; ubicarlas en lugares aleatorios
+    set size 1                       ; tamaño de agente
+    if random-float 1 < initial-infected / total-population [
+        set status "infected"
+        set color red                 ; color para los infectados
+    ]
+    if status != "infected" [
+        set status "healthy"
+        set color green               ; color para los sanos
+    ]
+    set infection-time 0             ; tiempo que llevan infectados
+]
+
+  reset-ticks
+end
+
+to go
+  ask people [
+    move
+    if status = "infected" [
+      infect-others
+      check-recovery-or-death
+      set infection-time infection-time + 1   ; aumenta el tiempo de infección
+    ]
+  ]
+
+  ; Actualización de la gráfica
+  set-current-plot "Progreso de la Epidemia"
+  set-current-plot-pen "Sanos"
+  plot count people with [status = "healthy"]
+  set-current-plot-pen "Infectados"
+  plot count people with [status = "infected"]
+  set-current-plot-pen "Muertos"
+  plot count people with [status = "dead"]
+
+  tick
+end
+
+to move  ; procedimiento de movimiento
+  right random 360
+  forward 1
+end
+
+to infect-others
+  ask people in-radius 1 [
+    if status = "healthy" and random-float 1 < infection-rate [
+      set status "infected"
+      set color red
+      set infection-time 0  ; reiniciar el temporizador al infectar
+    ]
+  ]
+end
+
+to check-recovery-or-death
+  if status = "infected" [
+    if random-float 1 < recovery-rate [
+      set status "healthy"              ; la persona se recupera
+      set color green
+    ]
+    if random-float 1 < death-rate [
+      set status "dead"                 ; la persona muere
+      set color gray
+      stop
+    ]
+  ]
+end
