@@ -1,0 +1,98 @@
+globals [ max-sheep ]  ; no permitir que la población de ovejas crezca demasiado
+
+; ovejas y lobos son ambos tipos de tortugas
+breed [ sheep a-sheep ]
+breed [ wolfs wolf ]
+
+turtles-own [ energy ]  ; tanto lobos como ovejas tienen energía
+
+to setup
+  clear-all
+  set max-sheep 1000  ; establecer un límite para la población de ovejas
+  clear-all
+  ask patches [ set pcolor green ]  ; Cambia todos los parches a verde
+  reset-ticks
+
+  create-sheep initial-number-sheep  ; crear las ovejas y luego inicializar sus variables
+  [
+    set shape "sheep"
+    set color brown
+    set size 1.5
+    set energy random (2 * sheep-gain-from-food)
+    setxy random-xcor random-ycor
+  ]
+
+  create-wolfs initial-number-wolfs  ; crear los lobos y luego inicializar sus variables
+  [
+    set shape "wolf"
+    set color orange
+    set size 2
+    set energy random (2 * wolf-gain-from-food)
+    setxy random-xcor random-ycor
+  ]
+
+  reset-ticks
+end
+
+to go
+  ; detener el modelo si no hay lobos ni ovejas
+  if not any? turtles [ stop ]
+  ; detener el modelo si no hay lobos y el número de ovejas se vuelve muy grande
+  if not any? wolfs and count sheep > max-sheep [ user-message "Las ovejas  han heredado la tierra" stop ]
+
+   set-current-plot "Poblacion de Lobos y Ovejas"
+   set-current-plot-pen "wolfs"
+   plot count wolfs
+   set-current-plot-pen "sheep"
+   plot count sheep
+
+  ask sheep [
+    move
+    set energy energy - 1  ; los ovejas pierden energía al moverse
+    death ; los ovejas mueren si se quedan sin energía
+    reproduce-sheep  ; las ovejas se reproducen a una tasa aleatoria
+  ]
+
+  ask wolfs [
+    move
+    set energy energy - 1  ; los lobos pierden energía al moverse
+    eat-sheep ; los lobos comen una oveja en su parche
+    death ; los lobos mueren si se quedan sin energía
+    reproduce-wolfs ; los lobos se reproducen a una tasa aleatoria
+  ]
+
+  tick
+end
+
+to move
+  rt random 50
+  lt random 50
+  fd 1
+end
+
+to reproduce-sheep
+  if random-float 100 < sheep-reproduce [  ; tirar "dados" para ver si se reproducen
+    set energy (energy / 2)                ; dividir energía entre el padre y la cría
+    hatch 1 [ rt random-float 360 fd 1 ]   ; incubar una cría y moverla hacia adelante 1 paso
+  ]
+end
+
+to reproduce-wolfs
+  if random-float 100 < wolf-reproduce [  ; tirar "dados" para ver si se reproducen
+    set energy (energy / 2)               ; dividir energía entre el padre y la cría
+    hatch 1 [ rt random-float 360 fd 1 ]  ; incubar una cría y moverla hacia adelante 1 paso
+  ]
+end
+
+to eat-sheep
+  let prey one-of sheep-here                    ; obtener una oveja aleatorio
+  if prey != nobody  [                          ; si conseguimos uno,
+    ask prey [ die ]                            ; matarlo, y...
+    set energy energy + wolf-gain-from-food     ; obtener energía al comer
+  ]
+end
+
+to death  ; procedimiento de tortuga (tanto lobo como oveja)
+  ; cuando la energía baja de cero, muere
+  if energy < 0 [ die ]
+end
